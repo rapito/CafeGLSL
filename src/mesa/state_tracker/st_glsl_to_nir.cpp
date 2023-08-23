@@ -576,7 +576,7 @@ st_glsl_to_nir_post_opts(struct st_context *st, struct gl_program *prog,
    if (st->allow_st_finalize_nir_twice)
       msg = st_finalize_nir(st, prog, shader_program, nir, true, true);
 
-   if (st->ctx->_Shader->Flags & GLSL_DUMP) {
+   if (st->ctx->_Shader && st->ctx->_Shader->Flags & GLSL_DUMP) {
       _mesa_log("\n");
       _mesa_log("NIR IR for linked %s program %d:\n",
              _mesa_shader_stage_to_string(prog->info.stage),
@@ -725,7 +725,8 @@ st_link_nir(struct gl_context *ctx,
       } else {
          validate_ir_tree(shader->ir);
 
-         if (ctx->_Shader->Flags & GLSL_DUMP) {
+#if !defined(CAFE_COMPILER)
+         if (ctx->_Shader && ctx->_Shader->Flags & GLSL_DUMP) {
             _mesa_log("\n");
             _mesa_log("GLSL IR for linked %s program %d:\n",
                       _mesa_shader_stage_to_string(shader->Stage),
@@ -733,7 +734,7 @@ st_link_nir(struct gl_context *ctx,
             _mesa_print_ir(_mesa_get_log_file(), shader->ir, NULL);
             _mesa_log("\n\n");
          }
-
+#endif
          prog->nir = glsl_to_nir(&st->ctx->Const, shader_program, shader->Stage, options);
       }
 

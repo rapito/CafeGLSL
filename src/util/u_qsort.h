@@ -51,11 +51,16 @@ struct util_qsort_adapter_data {
  */
 int util_qsort_adapter(void *ctx, const void *elem1, const void *elem2);
 
+#if defined(__WUT__)
+void	qsort_r (void *__base, size_t __nmemb, size_t __size, int (*_compar)(const void *, const void *, void *), void *__thunk);
+#endif
+
 static inline void
 util_qsort_r(void *base, size_t nmemb, size_t size,
              int (*compar)(const void *, const void *, void *),
              void *arg)
 {
+	
 #if defined(HAVE_GNU_QSORT_R)
    /* GNU extension added in glibc 2.8 */
    qsort_r(base, nmemb, size, compar, arg);

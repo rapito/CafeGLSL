@@ -65,6 +65,19 @@ level_to_str(enum mesa_log_level l)
 }
 #endif
 
+#if defined(__WUT__)
+void flockfile(FILE *filehandle)
+{
+   
+}
+
+void funlockfile(FILE *filehandle)
+{
+   
+}
+
+#endif
+
 void
 mesa_log(enum mesa_log_level level, const char *tag, const char *format, ...)
 {

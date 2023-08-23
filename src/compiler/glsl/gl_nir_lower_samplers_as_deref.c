@@ -175,7 +175,10 @@ lower_deref(nir_builder *b, struct lower_samplers_as_deref_state *state,
 
    remove_struct_derefs_prep(path.path, &name, &location, &type);
 
-   if (state->shader_program && var->data.how_declared != nir_var_hidden) {
+   printf("[DBG] [nir lower_deref] var->data.binding %d var->data.explicit_binding %d\n", var->data.binding, var->data.explicit_binding);
+
+   if (!var->data.explicit_binding && state->shader_program && var->data.how_declared != nir_var_hidden) {
+      /* Hack for Cafe: Always skip this branch and use the explicit location for samplers instead */
       /* For GLSL programs, look up the bindings in the uniform storage. */
       assert(location < state->shader_program->data->NumUniformStorage &&
              state->shader_program->data->UniformStorage[location].opaque[stage].active);
@@ -196,7 +199,8 @@ lower_deref(nir_builder *b, struct lower_samplers_as_deref_state *state,
       return deref;
    }
 
-   uint32_t hash = _mesa_hash_string(name);
+
+    uint32_t hash = _mesa_hash_string(name);
    struct hash_entry *h =
       _mesa_hash_table_search_pre_hashed(state->remap_table, hash, name);
 

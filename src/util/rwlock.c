@@ -7,6 +7,8 @@
 #include <assert.h>
 #include "rwlock.h"
 
+#if !defined(__WUT__)
+
 #if defined(_WIN32) && !defined(HAVE_PTHREAD)
 #include <windows.h>
 static_assert(sizeof(struct u_rwlock) == sizeof(SRWLOCK),
@@ -71,3 +73,6 @@ int u_rwlock_wrunlock(struct u_rwlock *rwlock)
    return pthread_rwlock_unlock(&rwlock->rwlock);
 #endif
 }
+
+#endif
+

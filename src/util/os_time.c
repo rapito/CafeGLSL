@@ -43,6 +43,10 @@
 #  include <sys/time.h> /* timeval */
 #  include <sched.h> /* sched_yield */
 #  include <errno.h>
+#elif defined(__WUT__)
+#  include <coreinit/thread.h>
+#  include <time.h>
+#  include <unistd.h>
 #elif DETECT_OS_WINDOWS
 #  include <windows.h>
 #else
@@ -53,7 +57,7 @@
 int64_t
 os_time_get_nano(void)
 {
-#if DETECT_OS_LINUX || DETECT_OS_BSD
+#if DETECT_OS_LINUX || DETECT_OS_BSD || defined(__WUT__)
 
    struct timespec tv;
    clock_gettime(CLOCK_MONOTONIC, &tv);
@@ -79,7 +83,6 @@ os_time_get_nano(void)
    nanosecs = (counter.QuadPart % frequency.QuadPart) * INT64_C(1000000000)
       / frequency.QuadPart;
    return secs*INT64_C(1000000000) + nanosecs;
-
 #else
 
 #error Unsupported OS
@@ -97,6 +100,9 @@ os_time_sleep(int64_t usecs)
    time.tv_sec = usecs / 1000000;
    time.tv_nsec = (usecs % 1000000) * 1000;
    while (clock_nanosleep(CLOCK_MONOTONIC, 0, &time, &time) == EINTR);
+
+#elif defined(__WUT__)
+   OSSleepTicks(OSNanosecondsToTicks(usecs * 1000));
 
 #elif DETECT_OS_UNIX
    usleep(usecs);

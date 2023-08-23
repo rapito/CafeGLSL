@@ -48,6 +48,10 @@
 #include <numeric>
 #include <sstream>
 
+#include <coreinit/debug.h>
+
+void DebugLog(const char *format, ...);
+
 namespace r600 {
 
 using std::string;
@@ -60,6 +64,7 @@ r600_get_varying_semantic(unsigned varying_location)
                                 true,
                                 &result.first,
                                 &result.second);
+    printf("[DBG] [r600_get_varying_semantic] sid=%u (shifted: %u)\n", result.second, result.second + 9);
 
    if (result.first == TGSI_SEMANTIC_GENERIC) {
       result.second += 9;
@@ -72,7 +77,9 @@ r600_get_varying_semantic(unsigned varying_location)
 void
 ShaderIO::set_sid(int sid)
 {
-   m_sid = sid;
+    printf("[DBG] [ShaderIO::set_sid] sid=%d\n", sid);
+
+    m_sid = sid;
    switch (m_name) {
    case TGSI_SEMANTIC_POSITION:
    case TGSI_SEMANTIC_PSIZE:

@@ -29,6 +29,8 @@
 
 #include "detect_os.h"
 
+#if !defined(__WUT__)
+
 #if DETECT_OS_UNIX
 #include <dlfcn.h>
 #endif
@@ -91,3 +93,5 @@ util_dl_error(void)
    return "unknown error";
 #endif
 }
+
+#endif

@@ -24,6 +24,8 @@ files_mesa_util_c11 = files(
 
 if with_c11_threads
   # no need implement c11 threads
+elif host_machine.system() == 'cafeos'
+  files_mesa_util_c11 += 'threads_cafe.c'
 elif host_machine.system() == 'windows'
   files_mesa_util_c11 += 'threads_win32.c'
   files_mesa_util_c11 += 'threads_win32_tls_callback.cpp'

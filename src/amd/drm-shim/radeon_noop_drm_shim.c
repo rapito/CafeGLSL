@@ -5,7 +5,7 @@
 #include "drm-shim/drm_shim.h"
 #include "util/log.h"
 #include <util/u_math.h>
-#include <radeon_drm.h>
+//#include <radeon_drm.h>
 
 bool drm_shim_driver_prefers_first_render_node = true;
 

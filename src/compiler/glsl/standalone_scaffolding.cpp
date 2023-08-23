@@ -36,6 +36,7 @@
 #include "util/strtod.h"
 #include "main/mtypes.h"
 
+/*
 void
 _mesa_warning(struct gl_context *ctx, const char *fmt, ...)
 {
@@ -44,9 +45,6 @@ _mesa_warning(struct gl_context *ctx, const char *fmt, ...)
 
     va_start(vargs, fmt);
 
-    /* This output is not thread-safe, but that's good enough for the
-     * standalone compiler.
-     */
     fprintf(stderr, "Mesa warning: ");
     vfprintf(stderr, fmt, vargs);
     fprintf(stderr, "\n");
@@ -62,15 +60,12 @@ _mesa_problem(struct gl_context *ctx, const char *fmt, ...)
 
     va_start(vargs, fmt);
 
-    /* This output is not thread-safe, but that's good enough for the
-     * standalone compiler.
-     */
     fprintf(stderr, "Mesa problem: ");
     vfprintf(stderr, fmt, vargs);
     fprintf(stderr, "\n");
 
     va_end(vargs);
-}
+}*/
 
 void
 _mesa_reference_shader_program_data(struct gl_context *ctx,

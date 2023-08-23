@@ -3,3 +3,7 @@
 *.pyo
 *.out
 /build
+
+build-cafe/
+
+build-host/

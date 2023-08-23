@@ -41,6 +41,10 @@
 #include <stdlib.h>
 #endif
 
+#if defined(__WUT__)
+#include <strings.h>
+#endif
+
 
 void
 _debug_vprintf(const char *format, va_list ap)

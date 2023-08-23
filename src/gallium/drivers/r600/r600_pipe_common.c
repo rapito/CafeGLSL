@@ -38,7 +38,11 @@
 #include "vl/vl_video_buffer.h"
 #include "radeon_video.h"
 #include <inttypes.h>
+
+#if !defined(__WUT__)
 #include <sys/utsname.h>
+#endif
+
 #include <stdlib.h>
 
 #ifdef LLVM_AVAILABLE
@@ -1209,7 +1213,9 @@ bool r600_common_screen_init(struct r600_common_screen *rscreen,
 			     struct radeon_winsys *ws)
 {
 	char family_name[32] = {}, kernel_version[128] = {};
+	#if !defined(__WUT__)
 	struct utsname uname_data;
+	#endif
 	const char *chip_name;
 
 	ws->query_info(ws, &rscreen->info, false, false);
@@ -1217,9 +1223,12 @@ bool r600_common_screen_init(struct r600_common_screen *rscreen,
 
 	chip_name = r600_get_family_name(rscreen);
 
+	#if !defined(__WUT__)
 	if (uname(&uname_data) == 0)
 		snprintf(kernel_version, sizeof(kernel_version),
 			 " / %s", uname_data.release);
+	#endif
+
 
 	snprintf(rscreen->renderer_string, sizeof(rscreen->renderer_string),
 		 "%s (%sDRM %i.%i.%i%s"

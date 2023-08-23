@@ -26,7 +26,10 @@
 
 #include "radeon_drm_winsys.h"
 #include "util/format/u_format.h"
+
+#if defined(__WUT__)
 #include <radeon_surface.h>
+#endif
 
 static unsigned cik_get_macro_tile_index(struct radeon_surf *surf)
 {

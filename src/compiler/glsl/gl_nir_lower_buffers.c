@@ -145,9 +145,14 @@ get_block_index_offset(nir_variable *var,
       const char *block_name = glsl_get_type_name(var->interface_type);
       if (( use_bindings && blocks[i]->Binding == var->data.binding) ||
           (!use_bindings && strcmp(block_name, blocks[i]->name.string) == 0)) {
-         var->data.driver_location = i;
+        /*var->data.driver_location = i;
          *index = i;
          *offset = blocks[i]->Uniforms[var->data.location].Offset;
+         * */
+          // hack for Cafe: Use explicit binding number and add 128 (the base which GX2 expects)
+          *index = var->data.binding + 0x80;
+          var->data.driver_location = *index;
+          *offset = blocks[i]->Uniforms[var->data.location].Offset;
          return;
       }
    }

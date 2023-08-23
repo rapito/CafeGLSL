@@ -54,7 +54,7 @@
 #  include <unistd.h>
 #  include <log/log.h>
 #  include <cutils/properties.h>
-#elif DETECT_OS_LINUX || DETECT_OS_CYGWIN || DETECT_OS_SOLARIS || DETECT_OS_HURD
+#elif DETECT_OS_LINUX || DETECT_OS_CYGWIN || DETECT_OS_SOLARIS || DETECT_OS_HURD || defined(__WUT__)
 #  include <unistd.h>
 #elif DETECT_OS_OPENBSD || DETECT_OS_FREEBSD
 #  include <sys/resource.h>
@@ -221,7 +221,10 @@ os_get_option(const char *name)
 bool
 os_get_total_physical_memory(uint64_t *size)
 {
-#if DETECT_OS_LINUX || DETECT_OS_CYGWIN || DETECT_OS_SOLARIS || DETECT_OS_HURD
+#if defined(__WUT__)
+   assert(false);
+   return true;
+#elif DETECT_OS_LINUX || DETECT_OS_CYGWIN || DETECT_OS_SOLARIS || DETECT_OS_HURD
    const long phys_pages = sysconf(_SC_PHYS_PAGES);
    const long page_size = sysconf(_SC_PAGE_SIZE);
 
@@ -336,7 +339,9 @@ os_get_available_system_memory(uint64_t *size)
 bool
 os_get_page_size(uint64_t *size)
 {
-#if DETECT_OS_UNIX && !DETECT_OS_APPLE && !DETECT_OS_HAIKU
+#if defined(__WUT__)
+   return 0x20000;
+#elif (DETECT_OS_UNIX && !DETECT_OS_APPLE && !DETECT_OS_HAIKU)
    const long page_size = sysconf(_SC_PAGE_SIZE);
 
    if (page_size <= 0)

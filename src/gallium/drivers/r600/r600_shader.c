@@ -47,6 +47,8 @@
 #include <stdio.h>
 #include <errno.h>
 
+#include <coreinit/debug.h>
+
 /* CAYMAN notes
 Why CAYMAN got loops for lots of instructions is explained here.
 
@@ -332,10 +334,11 @@ int r600_pipe_shader_create(struct pipe_context *ctx,
 	}
 
 	/* Store the shader in a buffer. */
-	if ((r = store_shader(ctx, shader)))
-		goto error;
+	//if ((r = store_shader(ctx, shader)))
+	//	goto error;
 
 	/* Build state. */
+	/*
 	switch (shader->shader.processor_type) {
 	case PIPE_SHADER_TESS_CTRL:
 		evergreen_update_hs_state(ctx, shader);
@@ -385,6 +388,7 @@ int r600_pipe_shader_create(struct pipe_context *ctx,
 		r = -EINVAL;
 		goto error;
 	}
+	*/
 
 	util_debug_message(&rctx->b.debug, SHADER_INFO, "%s shader: %d dw, %d gprs, %d alu_groups, %d loops, %d cf, %d stack",
 		           _mesa_shader_stage_to_abbrev(tgsi_processor_to_shader_stage(processor)),
@@ -395,6 +399,8 @@ int r600_pipe_shader_create(struct pipe_context *ctx,
 			   shader->shader.bc.ncf,
 			   shader->shader.bc.nstack);
 
+	/*
+	We dont need the NIR binary anymore
 	if (!sel->nir_blob && sel->nir) {
 		struct blob blob;
 		blob_init(&blob);
@@ -402,7 +408,8 @@ int r600_pipe_shader_create(struct pipe_context *ctx,
 		sel->nir_blob = malloc(blob.size);
 		memcpy(sel->nir_blob, blob.data, blob.size);
 		sel->nir_blob_size = blob.size;
-	}
+	}*/
+
 	ralloc_free(sel->nir);
 	sel->nir = NULL;
 
@@ -724,6 +731,8 @@ static int evergreen_interp_flat(struct r600_shader_ctx *ctx, int input)
 /* Map name/sid pair from tgsi to the 8-bit semantic index for SPI setup */
 static int r600_spi_sid(struct r600_shader_io * io)
 {
+    assert(false); // TGSI path not allowed
+
 	int index, name = io->name;
 
 	/* These params are handled differently, they don't need
@@ -1518,7 +1527,7 @@ static int eg_load_helper_invocation(struct r600_shader_ctx *ctx)
 	int r;
 	struct r600_bytecode_alu alu;
 
-	/* do a vtx fetch with wqm set on the vtx fetch */
+    /* do a vtx fetch with wqm set on the vtx fetch */
 	memset(&alu, 0, sizeof(struct r600_bytecode_alu));
 	alu.op = ALU_OP1_MOV;
 	alu.dst.sel = ctx->helper_invoc_reg;
@@ -7464,7 +7473,8 @@ static int do_vtx_fetch_inst(struct r600_shader_ctx *ctx, boolean src_requires_l
 
 	memset(&vtx, 0, sizeof(vtx));
 	vtx.op = FETCH_OP_VFETCH;
-	vtx.buffer_id = id + R600_MAX_CONST_BUFFERS;
+	//vtx.buffer_id = id + R600_MAX_CONST_BUFFERS;
+	vtx.buffer_id = id + 0x80; /* latte */
 	vtx.fetch_type = SQ_VTX_FETCH_NO_INDEX_OFFSET;
 	vtx.src_gpr = src_gpr;
 	vtx.mega_fetch_count = 16;
@@ -7901,7 +7911,7 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 				memset(&tex, 0, sizeof(struct r600_bytecode_tex));
 				tex.op = FETCH_OP_SET_CUBEMAP_INDEX;
 				tex.sampler_id = tgsi_tex_get_src_gpr(ctx, sampler_src_reg);
-				tex.resource_id = tex.sampler_id + R600_MAX_CONST_BUFFERS;
+				tex.resource_id = tex.sampler_id; //R600_MAX_CONST_BUFFERS;
 				tex.src_gpr = r600_get_temp(ctx);
 				tex.src_sel_x = 0;
 				tex.src_sel_y = 0;
@@ -8075,7 +8085,7 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 				tex.op = FETCH_OP_GET_TEXTURE_RESINFO;
 				tex.sampler_id = tgsi_tex_get_src_gpr(ctx, sampler_src_reg);
 				tex.sampler_index_mode = sampler_index_mode;
-				tex.resource_id = tex.sampler_id + R600_MAX_CONST_BUFFERS;
+				tex.resource_id = tex.sampler_id;// + R600_MAX_CONST_BUFFERS;
 				tex.resource_index_mode = sampler_index_mode;
 				tex.dst_gpr = treg;
 				tex.src_sel_x = 4;
@@ -8305,7 +8315,7 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 		tex.inst_mod = 1; /* to indicate this is ldfptr */
 		tex.sampler_id = tgsi_tex_get_src_gpr(ctx, sampler_src_reg);
 		tex.sampler_index_mode = sampler_index_mode;
-		tex.resource_id = tex.sampler_id + R600_MAX_CONST_BUFFERS;
+		tex.resource_id = tex.sampler_id;// + R600_MAX_CONST_BUFFERS;
 		tex.resource_index_mode = sampler_index_mode;
 		tex.src_gpr = src_gpr;
 		tex.dst_gpr = temp;
@@ -8485,7 +8495,7 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 
 	tex.sampler_id = tgsi_tex_get_src_gpr(ctx, sampler_src_reg);
 	tex.sampler_index_mode = sampler_index_mode;
-	tex.resource_id = tex.sampler_id + R600_MAX_CONST_BUFFERS;
+	tex.resource_id = tex.sampler_id;// + R600_MAX_CONST_BUFFERS;
 	tex.resource_index_mode = sampler_index_mode;
 	tex.src_gpr = src_gpr;
 	tex.dst_gpr = ctx->file_offset[inst->Dst[0].Register.File] + inst->Dst[0].Register.Index;
@@ -8887,6 +8897,8 @@ static unsigned tgsi_indirect_to_rat_index_mode(struct tgsi_ind_register ind)
 
 static int tgsi_load_buffer(struct r600_shader_ctx *ctx)
 {
+    assert(false); // may need updating for Latte?
+
 	struct tgsi_full_instruction *inst = &ctx->parse.FullToken.FullInstruction;
 	/* have to work out the offset into the RAT immediate return buffer */
 	struct r600_bytecode_vtx vtx;
@@ -8942,7 +8954,9 @@ static int tgsi_load_buffer(struct r600_shader_ctx *ctx)
 
 static int tgsi_load_rat(struct r600_shader_ctx *ctx)
 {
-	struct tgsi_full_instruction *inst = &ctx->parse.FullToken.FullInstruction;
+    assert(false); // may need updating for Latte?
+
+    struct tgsi_full_instruction *inst = &ctx->parse.FullToken.FullInstruction;
 	/* have to work out the offset into the RAT immediate return buffer */
 	struct r600_bytecode_vtx vtx;
 	struct r600_bytecode_cf *cf;

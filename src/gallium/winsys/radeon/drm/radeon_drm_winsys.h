@@ -32,7 +32,10 @@
 #include "pipebuffer/pb_slab.h"
 #include "util/u_queue.h"
 #include "util/list.h"
+
+#if !defined(__WUT__)
 #include <radeon_drm.h>
+#endif
 
 struct radeon_drm_cs;
 

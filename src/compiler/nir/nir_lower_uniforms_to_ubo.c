@@ -38,26 +38,38 @@
 #include "nir.h"
 #include "nir_builder.h"
 
+#define UNIFORM_CONST_BUFFER_INDEX      (0x80 + 15) // we use uniform 15 on GX2, which is index 0x8F
+
 static bool
 lower_instr(nir_intrinsic_instr *instr, nir_builder *b, bool dword_packed, bool load_vec4)
 {
    b->cursor = nir_before_instr(&instr->instr);
 
+    printf("[DBG] [nir ubo lower_instr] Called\n");
+    // nir_print_instr(&instr->instr, stdout);
+
    /* Increase all UBO binding points by 1. */
    if (instr->intrinsic == nir_intrinsic_load_ubo &&
        !b->shader->info.first_ubo_is_default_ubo) {
+       /*
       nir_ssa_def *old_idx = nir_ssa_for_src(b, instr->src[0], 1);
       nir_ssa_def *new_idx = nir_iadd(b, old_idx, nir_imm_int(b, 1));
       nir_instr_rewrite_src(&instr->instr, &instr->src[0],
                             nir_src_for_ssa(new_idx));
+     */
+
+      // Hack for Cafe: Leave UBO indices as-is
       return true;
    }
 
    if (instr->intrinsic == nir_intrinsic_load_uniform) {
-      nir_ssa_def *ubo_idx = nir_imm_int(b, 0);
+      nir_ssa_def *ubo_idx = nir_imm_int(b, UNIFORM_CONST_BUFFER_INDEX);
       nir_ssa_def *uniform_offset = nir_ssa_for_src(b, instr->src[0], 1);
 
-      assert(instr->dest.ssa.bit_size >= 8);
+       unsigned off_const = nir_intrinsic_base(instr); // the offset is stored in base, src[0] holds the dynamic offset (usually zero)
+       printf("[DBG] [nir ubo lower_instr nir_intrinsic_load_uniform] off_const (base): %d\n", (int)off_const); // index isnt the actual value
+
+       assert(instr->dest.ssa.bit_size >= 8);
       nir_ssa_def *load_result;
       if (load_vec4) {
          /* No asking us to generate load_vec4 when you've packed your uniforms
@@ -77,14 +89,14 @@ lower_instr(nir_intrinsic_instr *instr, nir_builder *b, bool dword_packed, bool 
                                           nir_intrinsic_base(instr) * multiplier));
          nir_intrinsic_instr *load = nir_instr_as_intrinsic(load_result->parent_instr);
 
-         /* If it's const, set the alignment to our known constant offset.  If
-          * not, set it to a pessimistic value based on the multiplier (or the
-          * scalar size, for qword loads).
-          *
-          * We could potentially set up stricter alignments for indirects by
-          * knowing what features are enabled in the APIs (see comment in
-          * nir_lower_ubo_vec4.c)
-          */
+          /* If it's const, set the alignment to our known constant offset.  If
+           * not, set it to a pessimistic value based on the multiplier (or the
+           * scalar size, for qword loads).
+           *
+           * We could potentially set up stricter alignments for indirects by
+           * knowing what features are enabled in the APIs (see comment in
+           * nir_lower_ubo_vec4.c)
+           */
          if (nir_src_is_const(instr->src[0])) {
             nir_intrinsic_set_align(load, NIR_ALIGN_MUL_MAX,
                                     (nir_src_as_uint(instr->src[0]) +
@@ -112,7 +124,9 @@ nir_lower_uniforms_to_ubo(nir_shader *shader, bool dword_packed, bool load_vec4)
 {
    bool progress = false;
 
-   nir_foreach_function(function, shader) {
+    printf("[DBG] [nir nir_lower_uniforms_to_ubo] Called\n");
+
+    nir_foreach_function(function, shader) {
       if (function->impl) {
          nir_builder builder;
          nir_builder_init(&builder, function->impl);
@@ -130,13 +144,15 @@ nir_lower_uniforms_to_ubo(nir_shader *shader, bool dword_packed, bool load_vec4)
       }
    }
 
+
    if (progress) {
       if (!shader->info.first_ubo_is_default_ubo) {
          nir_foreach_variable_with_modes(var, shader, nir_var_mem_ubo) {
             var->data.binding++;
             if (var->data.driver_location != -1)
                var->data.driver_location++;
-            /* only increment location for ubo arrays */
+            printf("[DBG] [nir nir_lower_uniforms_to_ubo] progress loop var->data.binding %u driver_location %u\n", var->data.binding, var->data.driver_location);
+            // only increment location for ubo arrays
             if (glsl_without_array(var->type) == var->interface_type &&
                 glsl_type_is_array(var->type))
                var->data.location++;
@@ -149,8 +165,10 @@ nir_lower_uniforms_to_ubo(nir_shader *shader, bool dword_packed, bool load_vec4)
                                                         shader->num_uniforms, 16);
          nir_variable *ubo = nir_variable_create(shader, nir_var_mem_ubo, type,
                                                  "uniform_0");
-         ubo->data.binding = 0;
+         ubo->data.binding = UNIFORM_CONST_BUFFER_INDEX;
          ubo->data.explicit_binding = 1;
+
+         printf("[DBG] Creating implicit UBO 15 (avoid)");
 
          struct glsl_struct_field field = {
             .type = type,
@@ -164,5 +182,7 @@ nir_lower_uniforms_to_ubo(nir_shader *shader, bool dword_packed, bool load_vec4)
    }
 
    shader->info.first_ubo_is_default_ubo = true;
+
+   // Hack for Cafe: Dont create default UBO in unit 0
    return progress;
 }

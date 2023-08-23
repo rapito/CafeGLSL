@@ -1083,6 +1083,9 @@ static int r600_bytecode_alloc_inst_kcache_lines(struct r600_bytecode *bc,
 
 		bank = alu->src[i].kc_bank;
 		assert(bank < R600_MAX_HW_CONST_BUFFERS);
+		//assert(bank < R600_MAX_HW_CONST_BUFFERS);
+        // Latte uniform buffer range is 0x80 to 0x8F
+        //assert(bank >= 0x80 && bank <= 0x8F);
 		line = (sel-512)>>4;
 		index_mode = alu->src[i].kc_rel ? 1 : 0; // V_SQ_CF_INDEX_0 / V_SQ_CF_INDEX_NONE
 
@@ -2795,6 +2798,11 @@ void *r600_create_vertex_fetch_shader(struct pipe_context *ctx,
 				      unsigned count,
 				      const struct pipe_vertex_element *elements)
 {
+	#if defined(CAFE_COMPILER)
+	assert(false);
+	return NULL;
+	#else
+	
 	struct r600_context *rctx = (struct r600_context *)ctx;
 	struct r600_bytecode bc;
 	struct r600_bytecode_vtx vtx;
@@ -2948,7 +2956,9 @@ void *r600_create_vertex_fetch_shader(struct pipe_context *ctx,
 	rctx->b.ws->buffer_unmap(rctx->b.ws, shader->buffer->buf);
 
 	r600_bytecode_clear(&bc);
+	
 	return shader;
+#endif
 }
 
 void r600_bytecode_alu_read(struct r600_bytecode *bc,

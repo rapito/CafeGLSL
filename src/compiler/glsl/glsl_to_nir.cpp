@@ -674,6 +674,7 @@ nir_visitor::visit(ir_variable *ir)
       unreachable("not reached");
    }
 
+
    var->data.index = ir->data.index;
    var->data.descriptor_set = 0;
    var->data.binding = ir->data.binding;

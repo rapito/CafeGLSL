@@ -1,0 +1,8 @@
+Tweaks:
+--- r600_shader.c ---
+In do_vtx_fetch_inst:
+Replace R600_MAX_CONST_BUFFERS with zero
+
+--- sfn_instr_tex ---
+TexInstr::emit_lowered_tex
+Replace R600_MAX_CONST_BUFFERS with zero

@@ -19,7 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-libradeon_noop_drm_shim = shared_library(
+libradeon_noop_drm_shim = static_library(
   'radeon_noop_drm_shim',
   'radeon_noop_drm_shim.c',
   include_directories: [inc_include, inc_src, inc_amd],

@@ -535,7 +535,7 @@ _mesa_glsl_msg(const YYLTYPE *locp, _mesa_glsl_parse_state *state,
    struct gl_context *ctx = state->ctx;
 
    /* Report the error via GL_ARB_debug_output. */
-   _mesa_shader_debug(ctx, type, &msg_id, msg);
+   //_mesa_shader_debug(ctx, type, &msg_id, msg);
 
    ralloc_strcat(&state->info_log, "\n");
 }
@@ -903,6 +903,16 @@ _mesa_glsl_process_extension(const char *name, YYLTYPE *name_locp,
          }
       } else {
          static const char fmt[] = "extension `%s' unsupported in %s shader";
+
+         // extension is NULL...
+          _mesa_glsl_error(name_locp, state, "[DBG] extension = %p", extension);
+          _mesa_glsl_error(name_locp, state, "[DBG] state->gl_version = %d", state->gl_version);
+          _mesa_glsl_error(name_locp, state, "[DBG] gl_version = %d", gl_version);
+          _mesa_glsl_error(name_locp, state, "[DBG] api = %d", api);
+          _mesa_glsl_error(name_locp, state, "[DBG] state->es_shader = %d", state->es_shader);
+          _mesa_glsl_error(name_locp, state, "[DBG] state->consts->AllowGLSLCompatShaders = %d", state->consts->AllowGLSLCompatShaders);
+          _mesa_glsl_error(name_locp, state, "[DBG] state->exts->ARB_explicit_uniform_location = %d", state->exts->ARB_explicit_uniform_location);
+          _mesa_glsl_error(name_locp, state, "[DBG] ....version[api] = %d", _mesa_extension_table[MESA_EXTENSION_ARB_explicit_uniform_location].version[api]);
 
          if (behavior == extension_require) {
             _mesa_glsl_error(name_locp, state, fmt,

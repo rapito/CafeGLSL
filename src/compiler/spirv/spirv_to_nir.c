@@ -38,6 +38,7 @@
 #include "util/u_debug.h"
 
 #include <stdio.h>
+#include <strings.h>
 
 #ifndef NDEBUG
 uint32_t mesa_spirv_debug = 0;

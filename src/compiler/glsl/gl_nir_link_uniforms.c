@@ -1435,6 +1435,7 @@ nir_link_uniform(const struct gl_constants *consts,
       }
 
       uniform->offset = state->var_is_in_block ? state->offset : -1;
+      // printf("[DBG] [nir_link_uniform] Offset: %d IsInBlock: %s\n", (int)uniform->offset, state->var_is_in_block ? "yes" : "no");
 
       int buffer_block_index = -1;
       /* If the uniform is inside a uniform block determine its block index by
@@ -1868,7 +1869,10 @@ gl_nir_link_uniforms(const struct gl_constants *consts,
 
          /* From now on the variable’s location will be its uniform index */
          if (!state.var_is_in_block)
-            var->data.location = prog->data->NumUniformStorage;
+         {
+             var->data.location = prog->data->NumUniformStorage;
+             printf("[DBG] [gl_nir_link_uniforms] Assing non-block uniform location %d\n", (int)var->data.location);
+         }
          else
             location = -1;
 

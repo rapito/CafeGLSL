@@ -26,7 +26,7 @@
 
 #include "util/u_queue.h"
 
-#if DETECT_OS_WINDOWS
+#if DETECT_OS_WINDOWS || defined(__WUT__)
 
 /* TODO: implement disk cache support on windows */
 

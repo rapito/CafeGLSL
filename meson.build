@@ -31,6 +31,12 @@ project(
   default_options : ['buildtype=debugoptimized', 'b_ndebug=if-release', 'c_std=c11', 'cpp_std=c++17', 'rust_std=2021']
 )
 
+# -Wp,-v -x c++ -
+#libgcc_file_name = run_command(meson.get_compiler('c'), '-print-libgcc-file-name').stdout().strip()
+#libgcc_file_name = run_command(meson.get_compiler('c'), '-v', '-x', 'c++', '-').stdout().strip()
+#error(libgcc_file_name)
+#error(meson.get_compiler('c') + '')
+
 # In recent versions, meson can inject some extra arguments to get richer
 # results from gtest based tests.  Feature was added in 0.55, but requiring
 # 0.59.2 to include an important fix.  See https://github.com/mesonbuild/meson/pull/9283.
@@ -58,6 +64,27 @@ pre_args = [
   '-DPACKAGE_VERSION="@0@"'.format(meson.project_version()),
   '-DPACKAGE_BUGREPORT="https://gitlab.freedesktop.org/mesa/mesa/-/issues"',
 ]
+
+mode_cafecompiler = true
+
+# some defines necessary for compiling for CafeOS (Wii U)
+if host_machine.system() == 'cafeos'
+pre_args += [
+  '-D_POSIX_C_SOURCE=201112L',
+  '-D_POSIX_BARRIERS',
+  '-DUTIL_ARCH_BIG_ENDIAN=1', # auto-detection fails so we set these manually
+  '-DUTIL_ARCH_LITTLE_ENDIAN=0',
+  '-D_POSIX_TIMEOUTS',
+  '-DLLONG_MAX=9223372036854775807LL',
+  # dont use TLS
+  '-Dthread_local='
+]
+endif
+
+# Posix threads cause issues because DevkitPro gcc does not support -pthread flag which is set by meson?
+#  '-D_POSIX_THREADS', # for Cafe (is there another way to define this?)
+#  '-D_UNIX98_THREAD_MUTEX_ATTRIBUTES',
+
 c_args = []
 cpp_args = []
 
@@ -147,6 +174,9 @@ if _sg == 'auto'
 else
   with_shared_glapi = _sg == 'enabled'
 endif
+
+# force to false
+with_shared_glapi = false
 
 # shared-glapi is required if at least two OpenGL APIs are being built
 if not with_shared_glapi
@@ -1046,27 +1076,27 @@ if get_option('buildtype') == 'debug'
 endif
 
 with_shader_cache = false
-_shader_cache = get_option('shader-cache')
-if _shader_cache == 'true'
-  _shader_cache = 'enabled'
-  warning('shader_cache option "true" deprecated, please use "enabled" instead.')
-elif _shader_cache == 'false'
-  _shader_cache = 'disabled'
-  warning('shader_cache option "false" deprecated, please use "disabled" instead.')
-endif
-if _shader_cache != 'disabled'
-  if host_machine.system() == 'windows'
-    if _shader_cache == 'enabled'
-      error('Shader Cache does not currently work on Windows')
-    endif
-  else
-    pre_args += '-DENABLE_SHADER_CACHE'
-    if not get_option('shader-cache-default')
-      pre_args += '-DSHADER_CACHE_DISABLE_BY_DEFAULT'
-    endif
-    with_shader_cache = true
-  endif
-endif
+#_shader_cache = get_option('shader-cache')
+#if _shader_cache == 'true'
+#  _shader_cache = 'enabled'
+#  warning('shader_cache option "true" deprecated, please use "enabled" instead.')
+#elif _shader_cache == 'false'
+#  _shader_cache = 'disabled'
+#  warning('shader_cache option "false" deprecated, please use "disabled" instead.')
+#endif
+#if _shader_cache != 'disabled'
+#  if host_machine.system() == 'windows'
+#    if _shader_cache == 'enabled'
+#      error('Shader Cache does not currently work on Windows')
+#    endif
+#  else
+#    pre_args += '-DENABLE_SHADER_CACHE'
+#    if not get_option('shader-cache-default')
+#      pre_args += '-DSHADER_CACHE_DISABLE_BY_DEFAULT'
+#    endif
+#    with_shader_cache = true
+#  endif
+#endif
 
 if with_shader_cache
   shader_cache_max_size = get_option('shader-cache-max-size')
@@ -1353,7 +1383,7 @@ if cc.compiles('''#include <stdint.h>
                               (int)__atomic_add_fetch(x.v, (uint64_t)1, __ATOMIC_ACQ_REL);
                      }''',
                   name : 'GCC atomic builtins required -latomic')
-    dep_atomic = cc.find_library('atomic')
+    #dep_atomic = cc.find_library('atomic')
   endif
 endif
 if not cc.links('''#include <stdint.h>
@@ -1587,7 +1617,7 @@ ld_args_build_id = cc.get_supported_link_arguments('-Wl,--build-id=sha1')
 dep_dl = null_dep
 if host_machine.system() != 'windows'
   if not cc.has_function('dlopen')
-    dep_dl = cc.find_library('dl', required : true)
+    #dep_dl = cc.find_library('dl', required : true)
   endif
   if cc.has_function('dladdr', dependencies : dep_dl)
     # This is really only required for util/disk_cache.h
@@ -1644,7 +1674,10 @@ elif with_shader_cache
   error('Shader Cache requires compression')
 endif
 
-if host_machine.system() == 'windows'
+if host_machine.system() == 'cafeos'
+   # CafeOS uses a custom thread implementation
+   dep_thread = null_dep
+elif host_machine.system() == 'windows'
   # For MSVC and MinGW we aren't using pthreads, and dependency('threads') will add linkage
   # to pthread for MinGW, so leave the dependency null_dep for Windows. For Windows linking to
   # kernel32 is enough for c11/threads.h and it's already linked by meson by default
@@ -1729,6 +1762,8 @@ _libdrm_checks = [
   ['radeon', (with_gallium_radeonsi or with_gallium_r300 or with_gallium_r600)],
   ['nouveau', with_gallium_nouveau],
 ]
+
+_libdrm_checks = []
 
 # Loop over the enables versions and get the highest libdrm requirement for all
 # active drivers.
@@ -2296,7 +2331,8 @@ endif
 
 gl_priv_libs = []
 if dep_thread.found()
-  gl_priv_libs += ['-lpthread', '-pthread']
+  #gl_priv_libs += ['-lpthread', '-pthread']
+  gl_priv_libs += ['-lpthread']
 endif
 if dep_m.found()
   gl_priv_libs += '-lm'
@@ -2344,6 +2380,10 @@ endif
 subdir('include')
 subdir('bin')
 subdir('src')
+
+if mode_cafecompiler
+subdir('cafecompiler')
+endif
 
 if meson.version().version_compare('>= 0.58')
   meson.add_devenv(devenv)

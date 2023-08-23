@@ -29,13 +29,25 @@
 
 #include <c11/threads.h>
 #include <errno.h>
+
+#if !defined(__WUT__)
 #include <linux/memfd.h>
+#include <sys/mman.h>
+#else
+
+#define _IOC_NRBITS	8
+#define _IOC_NRMASK	((1 << _IOC_NRBITS)-1)
+#define _IOC_NRSHIFT	0
+
+#define _IOC_NR(nr)		(((nr) >> _IOC_NRSHIFT) & _IOC_NRMASK)
+
+#endif
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <sys/mman.h>
 #include <unistd.h>
 #include "drm-uapi/drm.h"
 #include "drm_shim.h"
@@ -44,7 +56,7 @@
 
 #define SHIM_MEM_SIZE (4ull * 1024 * 1024 * 1024)
 
-#ifndef HAVE_MEMFD_CREATE
+#if !defined(HAVE_MEMFD_CREATE) && !defined(__WUT__)
 #include <sys/syscall.h>
 
 static inline int
@@ -86,11 +98,14 @@ drm_shim_device_init(void)
 
    mtx_init(&shim_device.mem_lock, mtx_plain);
 
+	assert(false);
+	/*
    shim_device.mem_fd = memfd_create("shim mem", MFD_CLOEXEC);
    assert(shim_device.mem_fd != -1);
 
    ASSERTED int ret = ftruncate(shim_device.mem_fd, SHIM_MEM_SIZE);
    assert(ret == 0);
+*/
 
    /* The man page for mmap() says
     *
@@ -289,6 +304,8 @@ ioctl_fn_t core_ioctls[] = {
 int
 drm_shim_ioctl(int fd, unsigned long request, void *arg)
 {
+		assert(false);
+	/*
    ASSERTED int type = _IOC_TYPE(request);
    int nr = _IOC_NR(request);
 
@@ -316,7 +333,7 @@ drm_shim_ioctl(int fd, unsigned long request, void *arg)
               "DRM_SHIM: unhandled core DRM ioctl 0x%X (0x%08lx)\n",
               nr, request);
    }
-
+*/
    return -EINVAL;
 }
 
@@ -363,6 +380,8 @@ drm_shim_bo_get(struct shim_bo *bo)
 void
 drm_shim_bo_put(struct shim_bo *bo)
 {
+		assert(false);
+	/*
    if (p_atomic_dec_return(&bo->refcount) == 0)
       return;
 
@@ -373,6 +392,7 @@ drm_shim_bo_put(struct shim_bo *bo)
    util_vma_heap_free(&shim_device.mem_heap, bo->mem_addr, bo->size);
    mtx_unlock(&shim_device.mem_lock);
    free(bo);
+   */
 }
 
 int
@@ -381,6 +401,8 @@ drm_shim_bo_get_handle(struct shim_fd *shim_fd, struct shim_bo *bo)
    /* We should probably have some real datastructure for finding the free
     * number.
     */
+    assert(false);
+	/*
    mtx_lock(&shim_fd->handle_lock);
    for (int new_handle = 1; ; new_handle++) {
       void *key = (void *)(uintptr_t)new_handle;
@@ -392,7 +414,7 @@ drm_shim_bo_get_handle(struct shim_fd *shim_fd, struct shim_bo *bo)
       }
    }
    mtx_unlock(&shim_fd->handle_lock);
-
+	*/
    return 0;
 }
 
@@ -401,12 +423,14 @@ drm_shim_bo_get_handle(struct shim_fd *shim_fd, struct shim_bo *bo)
 uint64_t
 drm_shim_bo_get_mmap_offset(struct shim_fd *shim_fd, struct shim_bo *bo)
 {
-   mtx_lock(&shim_device.mem_lock);
+	assert(false);
+   return 0;
+	/*   mtx_lock(&shim_device.mem_lock);
    _mesa_hash_table_u64_insert(shim_device.offset_map, bo->mem_addr, bo);
    mtx_unlock(&shim_device.mem_lock);
 
-   /* reuse the buffer address as the mmap offset: */
    return bo->mem_addr;
+   */
 }
 
 /* For mmap() on the DRM fd, look up the BO from the "offset" and map the BO's
@@ -414,8 +438,11 @@ drm_shim_bo_get_mmap_offset(struct shim_fd *shim_fd, struct shim_bo *bo)
  */
 void *
 drm_shim_mmap(struct shim_fd *shim_fd, size_t length, int prot, int flags,
-              int fd, off64_t offset)
+              int fd, _off64_t offset)
 {
+	assert(false);
+	/*
+	
    mtx_lock(&shim_device.mem_lock);
    struct shim_bo *bo = _mesa_hash_table_u64_search(shim_device.offset_map, offset);
    mtx_unlock(&shim_device.mem_lock);
@@ -426,8 +453,8 @@ drm_shim_mmap(struct shim_fd *shim_fd, size_t length, int prot, int flags,
    if (length > bo->size)
       return MAP_FAILED;
 
-   /* The offset we pass to mmap must be aligned to the page size */
    assert((bo->mem_addr & (shim_page_size - 1)) == 0);
 
-   return mmap(NULL, length, prot, flags, shim_device.mem_fd, bo->mem_addr);
+   return mmap(NULL, length, prot, flags, shim_device.mem_fd, bo->mem_addr);*/
+   return NULL;
 }

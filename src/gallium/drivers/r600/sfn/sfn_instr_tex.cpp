@@ -522,7 +522,9 @@ TexInstr::emit_lowered_tex(nir_tex_instr *tex, Inputs& src, Shader& shader)
    int32_t inst_mode = params[2].i32;
    uint32_t dst_swz_packed = params[3].u32;
 
-   auto dst = vf.dest_vec4(tex->dest, pin_group);
+   printf("[DBG] [TexInstr::emit_lowered_tex] samplerId %d textureId %u\n", sampler.id, tex->texture_index);
+
+    auto dst = vf.dest_vec4(tex->dest, pin_group);
 
    RegisterVec4::Swizzle src_swizzle = {0};
    for (int i = 0; i < 4; ++i)
@@ -541,7 +543,7 @@ TexInstr::emit_lowered_tex(nir_tex_instr *tex, Inputs& src, Shader& shader)
                            dst_swz,
                            src_coord,
                            sampler.id,
-                           sampler.id + R600_MAX_CONST_BUFFERS,
+                           sampler.id, /* Cafe */ // + R600_MAX_CONST_BUFFERS,
                            src.resource_offset);
 
    if (tex->op == nir_texop_txd)

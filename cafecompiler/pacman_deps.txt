@@ -1,0 +1,11 @@
+devkitpro-pkgbuild-helpers		This is wrong? As it conflicts with dkp-meson-scripts
+
+Instead:
+dkp-meson-scripts
+dkp-toolchain-vars
+
+-----
+for meson: python3, python3-setuptools, python3-mako
+for Mesa: bison, flex
+
+Installing byacc causes a compile error?

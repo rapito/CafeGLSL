@@ -37,6 +37,8 @@
 #include "sfn_instr_mem.h"
 #include "sfn_instr_tex.h"
 
+#include <coreinit/debug.h>
+
 namespace r600 {
 Assembler::Assembler(r600_shader *sh, const r600_shader_key& key):
     m_sh(sh),
@@ -677,6 +679,7 @@ AssamblerVisitor::visit(const FetchInstr& fetch_instr)
    else
       vtx_fetch_results.insert(fetch_instr.dst().sel());
 
+   // this seems to be called, but isn't used? Either that or the members are overwritten
    struct r600_bytecode_vtx vtx;
    memset(&vtx, 0, sizeof(vtx));
    vtx.op = fetch_instr.opcode();
@@ -684,7 +687,7 @@ AssamblerVisitor::visit(const FetchInstr& fetch_instr)
    vtx.fetch_type = fetch_instr.fetch_type();
    vtx.src_gpr = fetch_instr.src().sel();
    vtx.src_sel_x = fetch_instr.src().chan();
-   vtx.mega_fetch_count = fetch_instr.mega_fetch_count();
+   vtx.mega_fetch_count = fetch_instr.mega_fetch_count(); // mega_fetch_count is encoded with a bias of +1, so we should subtract 1 somewhere? Seems like the HW doesnt mind tho
    vtx.dst_gpr = fetch_instr.dst().sel();
    vtx.dst_sel_x = fetch_instr.dest_swizzle(0); /* SEL_X */
    vtx.dst_sel_y = fetch_instr.dest_swizzle(1); /* SEL_Y */
@@ -703,6 +706,20 @@ AssamblerVisitor::visit(const FetchInstr& fetch_instr)
    vtx.array_base = fetch_instr.array_base();
    vtx.array_size = fetch_instr.array_size();
    vtx.srf_mode_all = fetch_instr.has_fetch_flag(FetchInstr::srf_mode);
+
+   // extra hacks:
+   // Mesa generates fetch instruction with use_const_field set, but dumps from official shaders show that the official behavior is the opposite
+   // The code below tries to hackily match the use_const_fields=1 behavior
+   // Further testing showed that this isn't needed
+
+    /*
+    OSReport("[DBG] AssamblerVisitor::visit -- use_const_fields\n");
+    vtx.use_const_fields = 1;
+    vtx.mega_fetch_count = vtx.mega_fetch_count - 1;
+    vtx.data_format = 0;
+    vtx.num_format_all = 0;
+    vtx.format_comp_all = 0;
+    vtx.srf_mode_all = 0;*/
 
    if (fetch_instr.has_fetch_flag(FetchInstr::use_tc)) {
       if ((r600_bytecode_add_vtx_tc(m_bc, &vtx))) {

@@ -43,6 +43,8 @@
 #elif defined(HAVE_PTHREAD)
 #  include <pthread.h>
 #  include <unistd.h> /* close, _exit */
+#elif defined(__WUT__)
+// nothing
 #else
 #  error Not supported on this platform.
 #endif
@@ -137,6 +139,33 @@ typedef pthread_once_t  once_flag;
 #  else
 #    define TSS_DTOR_ITERATIONS 1  // assume TSS dtor MAY be called at least once.
 #  endif
+
+#elif defined(__WUT__)
+
+#include <coreinit/mutex.h>
+
+typedef struct
+{
+   void *Ptr;
+} cnd_t;
+/* Define thrd_t as struct type intentionally for avoid use of thrd_t as pointer type */
+typedef struct
+{
+   void *handle;
+} thrd_t;
+typedef unsigned long tss_t;
+typedef struct
+{
+   OSMutex m;
+} mtx_t; /* Mock of CRITICAL_SECTION */
+typedef struct
+{
+   volatile uintptr_t status;
+} once_flag;
+
+#  define ONCE_FLAG_INIT {0}
+#  define TSS_DTOR_ITERATIONS 1
+
 #else
 #  error Not supported on this platform.
 #endif

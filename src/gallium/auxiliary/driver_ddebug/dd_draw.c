@@ -43,6 +43,8 @@
 void
 dd_get_debug_filename_and_mkdir(char *buf, size_t buflen, bool verbose)
 {
+	assert(false);
+/*	
    static unsigned index;
    char proc_name[128], dir[256];
 
@@ -61,6 +63,7 @@ dd_get_debug_filename_and_mkdir(char *buf, size_t buflen, bool verbose)
 
    if (verbose)
       fprintf(stderr, "dd: dumping to file %s\n", buf);
+      */
 }
 
 FILE *

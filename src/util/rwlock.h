@@ -28,6 +28,8 @@
 #ifndef RWLOCK_H
 #define RWLOCK_H
 
+#if !defined(__WUT__)
+
 #if defined(HAVE_PTHREAD)
 #include <pthread.h>
 #endif
@@ -56,6 +58,8 @@ int u_rwlock_wrunlock(struct u_rwlock *rwlock);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif
