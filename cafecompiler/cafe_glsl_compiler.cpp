@@ -1032,6 +1032,8 @@ void CafeGLSLCompiler::GetPixelShaderRegs(PSRegs& psRegs)
 	psRegs.db_shader_control |= S_02880C_Z_EXPORT_ENABLE(z_export);
 	psRegs.db_shader_control |= S_02880C_STENCIL_REF_EXPORT_ENABLE(stencil_export);
 	psRegs.db_shader_control |= S_02880C_MASK_EXPORT_ENABLE(mask_export);
+	if (rshader->uses_kill)
+		psRegs.db_shader_control |= S_02880C_KILL_ENABLE(1);
     /* spi_input_z */
 	psRegs.spi_input_z = 0;
 	if (pos_index != -1) 
