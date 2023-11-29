@@ -48,7 +48,9 @@
 #include <numeric>
 #include <sstream>
 
+#if defined(__WUT__)
 #include <coreinit/debug.h>
+#endif
 
 void DebugLog(const char *format, ...);
 

@@ -1082,10 +1082,8 @@ static int r600_bytecode_alloc_inst_kcache_lines(struct r600_bytecode *bc,
 			continue;
 
 		bank = alu->src[i].kc_bank;
-		assert(bank < R600_MAX_HW_CONST_BUFFERS);
-		//assert(bank < R600_MAX_HW_CONST_BUFFERS);
-        // Latte uniform buffer range is 0x80 to 0x8F
-        //assert(bank >= 0x80 && bank <= 0x8F);
+		// Latte uniform buffer range is 0x80 to 0x8F
+        assert(bank >= 0x80 && bank <= 0x8F);
 		line = (sel-512)>>4;
 		index_mode = alu->src[i].kc_rel ? 1 : 0; // V_SQ_CF_INDEX_0 / V_SQ_CF_INDEX_NONE
 

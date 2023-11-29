@@ -37,7 +37,9 @@
 #include "sfn_instr_mem.h"
 #include "sfn_instr_tex.h"
 
+#if defined(__WUT__)
 #include <coreinit/debug.h>
+#endif
 
 namespace r600 {
 Assembler::Assembler(r600_shader *sh, const r600_shader_key& key):

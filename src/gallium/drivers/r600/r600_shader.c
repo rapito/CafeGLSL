@@ -47,7 +47,9 @@
 #include <stdio.h>
 #include <errno.h>
 
+#if defined(__WUT__)
 #include <coreinit/debug.h>
+#endif
 
 /* CAYMAN notes
 Why CAYMAN got loops for lots of instructions is explained here.

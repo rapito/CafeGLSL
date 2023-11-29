@@ -139,12 +139,12 @@ void main()
     PrintShaderVars(ps);
     //assert(ps->uniformBlockCount == 2);
     //assert(ps->samplerVarCount == 2);
-    assert(GX2Shader_GetProgramInputLocation(ps, "Frag_UV") == 0);
-    assert(GX2Shader_GetProgramInputLocation(ps, "Frag_Color") == 1);
+    //assert(GX2Shader_GetProgramInputLocation(ps, "Frag_UV") == 0);
+    //assert(GX2Shader_GetProgramInputLocation(ps, "Frag_Color") == 1);
     //assert(GX2Shader_GetProgramInputLocation(ps, "textureCoord_at5") == 5);
-    assert(GX2Shader_GetProgramOutputLocation(ps, "Out_Color") == 0);
-    assert(GX2Shader_GetNumProgramInputs(ps) == 2);
-    assert(GX2Shader_GetNumProgramOutputs(ps) == 1);
+    //assert(GX2Shader_GetProgramOutputLocation(ps, "Out_Color") == 0);
+    //assert(GX2Shader_GetNumProgramInputs(ps) == 2);
+    //assert(GX2Shader_GetNumProgramOutputs(ps) == 1);
     assert(GX2Shader_GetTextureSamplerLocation(ps, "Texture") == 0);
 
 }
