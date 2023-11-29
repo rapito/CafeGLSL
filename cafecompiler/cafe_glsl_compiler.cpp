@@ -1262,6 +1262,14 @@ void CafeGLSLCompiler::GetShaderIOInfo(CafeShaderIOInfo& shaderIOInfo)
 		var.count = 1; // todo - array support
 	};
 
+    auto trackLoopVar = [](CafeShaderIOInfo& shaderIOInfo, uint32_t offset, uint32_t value)
+    {
+        shaderIOInfo.loopVarCount++;
+        shaderIOInfo.loopVars = (GX2LoopVar*)realloc(shaderIOInfo.loopVars, sizeof(GX2LoopVar) * shaderIOInfo.loopVarCount);
+        shaderIOInfo.loopVars[shaderIOInfo.loopVarCount - 1].offset = offset;
+        shaderIOInfo.loopVars[shaderIOInfo.loopVarCount - 1].value = value;
+    };
+
     auto getUniformOffset = [](gl_program* glProg, gl_shader_program* prog, const gl_uniform_storage* uniform) -> int32_t
     {
         if(uniform->num_driver_storage <= 0)
@@ -1407,6 +1415,13 @@ void CafeGLSLCompiler::GetShaderIOInfo(CafeShaderIOInfo& shaderIOInfo)
         }
     }
 
+    // loop constants
+    // Mesa seems to use only the first loop register
+    // the reg offsets stored in GX2LoopVar are relative to the type's stage loop const base (PS=0, VS=32, GS=64), therefore always use offset zero
+    trackLoopVar(shaderIOInfo, 0, 0x01000FFF);
+    // ideally we'd set the loop const according to the loop instruction type used by the shader (normal vs dx10)
+    // but we don't have that info easily available here. Instead, like Mesa, we set it to a constant that works both for SQ_LOOP_CONST and SQ_LOOP_CONST_DX10
+
     // for uniform variables (in UBO 15) we can get the offset by:
     // iterating prog->UniformRemapTable/NumUniformRemapTable which is a pointer table for gl_uniform_storage*
     // where each index corresponds to a single 4 byte value (int). A mat4 is 4*4 entries
@@ -1425,6 +1440,8 @@ void CafeGLSLCompiler::GetVertexShaderVars(GX2VertexShader* vs)
     vs->uniformVars = shaderIoInfo.uniformVars;
     vs->samplerVarCount = shaderIoInfo.samplerVarCount;
     vs->samplerVars = shaderIoInfo.samplerVars;
+    vs->loopVarCount = shaderIoInfo.loopVarCount;
+    vs->loopVars = shaderIoInfo.loopVars;
 }
 
 void CafeGLSLCompiler::GetPixelShaderVars(GX2PixelShader* ps)
@@ -1438,6 +1455,8 @@ void CafeGLSLCompiler::GetPixelShaderVars(GX2PixelShader* ps)
     ps->uniformVars = shaderIoInfo.uniformVars;
     ps->samplerVarCount = shaderIoInfo.samplerVarCount;
     ps->samplerVars = shaderIoInfo.samplerVars;
+    ps->loopVarCount = shaderIoInfo.loopVarCount;
+    ps->loopVars = shaderIoInfo.loopVars;
 }
 
 /*
