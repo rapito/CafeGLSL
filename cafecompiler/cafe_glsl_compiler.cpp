@@ -346,12 +346,7 @@ gl_context *_GLSLCreateDefaultContext(gl_api api, GLuint GLSLVersion)
 	ctx->Const.MaxTextureCoordUnits = 2;
 	ctx->Const.Program[MESA_SHADER_VERTEX].MaxAttribs = 16;
 
-	ctx->Const.Program[MESA_SHADER_VERTEX].MaxUniformComponents = 512;
-	ctx->Const.Program[MESA_SHADER_VERTEX].MaxOutputComponents = 32;
-	ctx->Const.MaxVarying = 8; /* == gl_MaxVaryingFloats / 4 */
 	ctx->Const.MaxCombinedTextureImageUnits = 2;
-	ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxUniformComponents = 64;
-	ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxInputComponents = 32;
 
 	ctx->Const.MaxDrawBuffers = 1;
 	ctx->Const.MaxComputeWorkGroupCount[0] = 65535;
@@ -365,9 +360,6 @@ gl_context *_GLSLCreateDefaultContext(gl_api api, GLuint GLSLVersion)
 	ctx->Const.MaxComputeVariableGroupSize[1] = 512;
 	ctx->Const.MaxComputeVariableGroupSize[2] = 64;
 	ctx->Const.MaxComputeVariableGroupInvocations = 512;
-	ctx->Const.Program[MESA_SHADER_COMPUTE].MaxUniformComponents = 1024;
-	ctx->Const.Program[MESA_SHADER_COMPUTE].MaxInputComponents = 0;	 /* not used */
-	ctx->Const.Program[MESA_SHADER_COMPUTE].MaxOutputComponents = 0; /* not used */
 
     /* Set up default shader compiler options. */
 	struct gl_shader_compiler_options options;
@@ -387,7 +379,13 @@ void CafeGLSLCompiler::_InitGLContext()
 	glCtx = _GLSLCreateDefaultContext(API_OPENGL_COMPAT, 450);
 	gl_context *ctx = glCtx;
 
-	// taken from the standalone compiler
+    const int CAFE_MAX_UNIFORM_BLOCKS_PER_STAGE = 16;
+    const int CAFE_MAX_UNIFORM_COMPONENTS_PER_BLOCK = 4096 * 4; // 4096 vec4, 64KiB. The actual HW limit might be higher (testing required)
+    const int CAFE_MAX_UNIFORM_COMPONENTS_COMBINED = CAFE_MAX_UNIFORM_BLOCKS_PER_STAGE * CAFE_MAX_UNIFORM_COMPONENTS_PER_BLOCK;
+    const int CAFE_MAX_TEXTURE_UNITS_PER_STAGE = 18;
+    const int CAFE_MAX_VERTEX_STREAMS = 32;
+
+    // taken from the standalone compiler
 	ctx->Extensions.ARB_ES3_compatibility = true;
 	ctx->Extensions.ARB_ES3_1_compatibility = true;
 	ctx->Extensions.ARB_ES3_2_compatibility = true;
@@ -405,14 +403,12 @@ void CafeGLSLCompiler::_InitGLContext()
 	ctx->Const.MaxComputeVariableGroupSize[2] = 64;
 	ctx->Const.MaxComputeVariableGroupInvocations = 512;
 	ctx->Const.Program[MESA_SHADER_COMPUTE].MaxTextureImageUnits = 16;
-	ctx->Const.Program[MESA_SHADER_COMPUTE].MaxUniformComponents = 1024;
 	ctx->Const.Program[MESA_SHADER_COMPUTE].MaxCombinedUniformComponents = 1024;
 	ctx->Const.Program[MESA_SHADER_COMPUTE].MaxInputComponents = 0;	 /* not used */
 	ctx->Const.Program[MESA_SHADER_COMPUTE].MaxOutputComponents = 0; /* not used */
-	ctx->Const.Program[MESA_SHADER_COMPUTE].MaxAtomicBuffers = 8;
-	ctx->Const.Program[MESA_SHADER_COMPUTE].MaxAtomicCounters = 8;
 	ctx->Const.Program[MESA_SHADER_COMPUTE].MaxImageUniforms = 8;
 
+    ctx->Const.MaxUniformBufferBindings = 0; // glUniformBlockBinding limit (API only)
     ctx->Const.MaxClipPlanes = 8;
     ctx->Const.MaxDrawBuffers = 8;
     ctx->Const.MinProgramTexelOffset = -8;
@@ -420,55 +416,59 @@ void CafeGLSLCompiler::_InitGLContext()
     ctx->Const.MaxLights = 8;
     ctx->Const.MaxTextureCoordUnits = 8;
     ctx->Const.MaxTextureUnits = 2;
-    ctx->Const.MaxUniformBufferBindings = 84;
-    ctx->Const.MaxVertexStreams = 4;
+
+    ctx->Const.MaxVertexStreams = CAFE_MAX_VERTEX_STREAMS;
     ctx->Const.MaxTransformFeedbackBuffers = 4;
     ctx->Const.MaxShaderStorageBufferBindings = 4;
     ctx->Const.MaxShaderStorageBlockSize = 4096;
     ctx->Const.MaxAtomicBufferBindings = 4;
 
-    ctx->Const.Program[MESA_SHADER_VERTEX].MaxAttribs = 16;
-    ctx->Const.Program[MESA_SHADER_VERTEX].MaxUniformComponents = 1024;
-    ctx->Const.Program[MESA_SHADER_VERTEX].MaxCombinedUniformComponents = 1024;
+    ctx->Const.Program[MESA_SHADER_VERTEX].MaxAttribs = CAFE_MAX_VERTEX_STREAMS;
+    ctx->Const.Program[MESA_SHADER_VERTEX].MaxUniformBlocks = CAFE_MAX_UNIFORM_BLOCKS_PER_STAGE;
+    ctx->Const.Program[MESA_SHADER_VERTEX].MaxUniformComponents = CAFE_MAX_UNIFORM_COMPONENTS_PER_BLOCK;
+    ctx->Const.Program[MESA_SHADER_VERTEX].MaxCombinedUniformComponents = CAFE_MAX_UNIFORM_COMPONENTS_COMBINED;
     ctx->Const.Program[MESA_SHADER_VERTEX].MaxInputComponents = 0; /* not used */
-    ctx->Const.Program[MESA_SHADER_VERTEX].MaxOutputComponents = 64;
+    ctx->Const.Program[MESA_SHADER_VERTEX].MaxOutputComponents = 128;
+    ctx->Const.Program[MESA_SHADER_VERTEX].MaxTextureImageUnits = CAFE_MAX_TEXTURE_UNITS_PER_STAGE;
 
-    ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxUniformComponents = 1024;
-    ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxCombinedUniformComponents = 1024;
-    ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxInputComponents =
-        ctx->Const.Program[MESA_SHADER_VERTEX].MaxOutputComponents;
+    ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxUniformBlocks = CAFE_MAX_UNIFORM_BLOCKS_PER_STAGE;
+    ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxUniformComponents = CAFE_MAX_UNIFORM_COMPONENTS_PER_BLOCK;
+    ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxCombinedUniformComponents = CAFE_MAX_UNIFORM_COMPONENTS_COMBINED;
+    ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxInputComponents = ctx->Const.Program[MESA_SHADER_VERTEX].MaxOutputComponents;
     ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxOutputComponents = 128;
+    ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxTextureImageUnits = CAFE_MAX_TEXTURE_UNITS_PER_STAGE;
 
-    ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxUniformComponents = 1024;
-    ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxCombinedUniformComponents = 1024;
-    ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxInputComponents =
-        ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxOutputComponents;
+    ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxUniformBlocks = CAFE_MAX_UNIFORM_BLOCKS_PER_STAGE;
+    ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxUniformComponents = CAFE_MAX_UNIFORM_COMPONENTS_PER_BLOCK;
+    ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxCombinedUniformComponents = CAFE_MAX_UNIFORM_COMPONENTS_COMBINED;
+    ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxInputComponents = ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxOutputComponents;
     ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxOutputComponents = 0; /* not used */
+    ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxTextureImageUnits = CAFE_MAX_TEXTURE_UNITS_PER_STAGE;
 
-    // uniform blocks per stage
-    ctx->Const.Program[MESA_SHADER_VERTEX].MaxUniformBlocks = 16;
-    ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxUniformBlocks = 16;
-    ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxUniformBlocks = 16;
-    ctx->Const.Program[MESA_SHADER_COMPUTE].MaxUniformBlocks = 16;
+    ctx->Const.Program[MESA_SHADER_COMPUTE].MaxUniformBlocks = CAFE_MAX_UNIFORM_BLOCKS_PER_STAGE;
+    ctx->Const.Program[MESA_SHADER_COMPUTE].MaxUniformComponents = CAFE_MAX_UNIFORM_COMPONENTS_PER_BLOCK;
+    ctx->Const.Program[MESA_SHADER_COMPUTE].MaxCombinedUniformComponents = CAFE_MAX_UNIFORM_COMPONENTS_COMBINED;
+    ctx->Const.Program[MESA_SHADER_COMPUTE].MaxInputComponents = 0; /* not used */
+    ctx->Const.Program[MESA_SHADER_COMPUTE].MaxOutputComponents = 0; /* not used */
+    ctx->Const.Program[MESA_SHADER_COMPUTE].MaxTextureImageUnits = CAFE_MAX_TEXTURE_UNITS_PER_STAGE;
+    ctx->Const.Program[MESA_SHADER_COMPUTE].MaxAtomicBuffers = 8; // todo - does Latte support atomic buffers?
+    ctx->Const.Program[MESA_SHADER_COMPUTE].MaxAtomicCounters = 8;
+
+    // note: MaxUniformComponents is the total for non-block uniforms (which we currently reassign to uniform buffer 15)
+
+    // uniform block max size
+    ctx->Const.MaxUniformBlockSize = CAFE_MAX_UNIFORM_COMPONENTS_PER_BLOCK * sizeof(uint32_t);
+
+    // combined limits
+    ctx->Const.MaxCombinedTextureImageUnits =
+        ctx->Const.Program[MESA_SHADER_VERTEX].MaxTextureImageUnits +
+        ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxTextureImageUnits +
+        ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxTextureImageUnits;
+
     ctx->Const.MaxCombinedUniformBlocks = ctx->Const.MaxUniformBufferBindings =
             ctx->Const.Program[MESA_SHADER_VERTEX].MaxUniformBlocks +
-            ctx->Const.Program[MESA_SHADER_TESS_CTRL].MaxUniformBlocks +
-            ctx->Const.Program[MESA_SHADER_TESS_EVAL].MaxUniformBlocks +
             ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxUniformBlocks +
-            ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxUniformBlocks +
-            ctx->Const.Program[MESA_SHADER_COMPUTE].MaxUniformBlocks;
-
-    // uniform block max size (unknown)
-    ctx->Const.MaxUniformBlockSize = 0x10000000;
-
-    // texture units per stage
-    ctx->Const.Program[MESA_SHADER_VERTEX].MaxTextureImageUnits = 18;
-    ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxTextureImageUnits = 18;
-    ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxTextureImageUnits = 18;
-    ctx->Const.Program[MESA_SHADER_COMPUTE].MaxTextureImageUnits = 18;
-
-    ctx->Const.MaxCombinedTextureImageUnits =
-        ctx->Const.Program[MESA_SHADER_VERTEX].MaxTextureImageUnits + ctx->Const.Program[MESA_SHADER_GEOMETRY].MaxTextureImageUnits + ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxTextureImageUnits;
+            ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxUniformBlocks;
 
     ctx->Const.MaxGeometryOutputVertices = 256;
     ctx->Const.MaxGeometryTotalOutputComponents = 1024;
@@ -479,8 +479,7 @@ void CafeGLSLCompiler::_InitGLContext()
 	ctx->Const.MaxPatchVertices = 32;
 
 	/* GL_ARB_explicit_uniform_location, GL_MAX_UNIFORM_LOCATIONS */
-	ctx->Const.MaxUserAssignableUniformLocations =
-		4 * MESA_SHADER_STAGES * MAX_UNIFORMS;
+	ctx->Const.MaxUserAssignableUniformLocations = 4 * MESA_SHADER_STAGES * MAX_UNIFORMS;
 
     ctx->Const.NativeIntegers = 1;
     // other stuff from _mesa_init_constants missing?
